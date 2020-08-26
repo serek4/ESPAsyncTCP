@@ -1303,6 +1303,7 @@ err_t AsyncServer::_s_accept(void *arg, tcp_pcb* pcb, err_t err){
 
 #if ASYNC_TCP_SSL_ENABLED
 err_t AsyncServer::_poll(tcp_pcb* pcb){
+  err_t err = ERR_OK;
   if(!tcp_ssl_has_client() && _pending){
     struct pending_pcb * p = _pending;
     if(p->pcb == pcb){
@@ -1320,13 +1321,16 @@ err_t AsyncServer::_poll(tcp_pcb* pcb){
       c->onConnect([this](void * arg, AsyncClient *c){
         _connect_cb(_connect_cb_arg, c);
       }, this);
-      if(p->pb)
-        c->_recv(pcb, p->pb, 0);
+      if(p->pb) {
+        auto errorTracker = c->getACErrorTracker();
+        c->_recv(errorTracker, pcb, p->pb, 0);
+        err = errorTracker->getCallbackCloseError();
+      }
     }
     // Should there be error handling for when "new AsynClient" fails??
     free(p);
   }
-  return ERR_OK;
+  return err;
 }
 
 err_t AsyncServer::_recv(struct tcp_pcb *pcb, struct pbuf *pb, err_t err){

@@ -388,6 +388,7 @@ size_t AsyncClient::write(const char* data, size_t size, uint8_t apiflags) {
 }
 
 size_t AsyncClient::add(const char* data, size_t size, uint8_t apiflags) {
+//  Serial.printf("AsyncClient ADD %d bytes for sending\n",size);
   if(!_pcb || size == 0 || data == NULL)
     return 0;
   size_t room = space();
@@ -407,10 +408,12 @@ size_t AsyncClient::add(const char* data, size_t size, uint8_t apiflags) {
   size_t will_send = (room < size) ? room : size;
   err_t err = tcp_write(_pcb, data, will_send, apiflags);
   if(err != ERR_OK) {
-    ASYNC_TCP_DEBUG("_add[%u]: tcp_write() returned err: %s(%ld)\n", getConnectionId(), errorToString(err), err);
+//    Serial.printf("AsyncClient _add[??]: tcp_write() returned err: %s(%ld)\n", errorToString(err), err);
     return 0;
   }
   _tx_unsent_len += will_send;
+  _tx_unacked_len += will_send;
+//  Serial.printf("AsyncClient _add[??]: unsent length=%d\n", _tx_unsent_len );
   return will_send;
 }
 
@@ -419,16 +422,18 @@ bool AsyncClient::send(){
   if(_pcb_secure)
     return true;
 #endif
+//  Serial.printf("AsyncClient send[??]\n");
   err_t err = tcp_output(_pcb);
   if(err == ERR_OK){
     _pcb_busy = true;
     _pcb_sent_at = millis();
-    _tx_unacked_len += _tx_unsent_len;
+//    _tx_unacked_len += _tx_unsent_len;
+//    Serial.printf("AsyncClient UNACKED LEN = %u\n",_tx_unacked_len);
     _tx_unsent_len = 0;
     return true;
   }
 
-  ASYNC_TCP_DEBUG("send[%u]: tcp_output() returned err: %s(%ld)", getConnectionId(), errorToString(err), err);
+//  Serial.printf("AsyncClient send[??]: tcp_output() returned err: %s(%ld)", errorToString(err), err);
   _tx_unsent_len = 0;
   return false;
 }
@@ -548,11 +553,13 @@ void AsyncClient::_sent(std::shared_ptr<ACErrorTracker>& errorTracker, tcp_pcb* 
   _rx_last_packet = millis();
   _tx_unacked_len -= len;
   _tx_acked_len += len;
-  ASYNC_TCP_DEBUG("_sent[%u]: %4u, unacked=%4u, acked=%4u, space=%4u\n", errorTracker->getConnectionId(), len, _tx_unacked_len, _tx_acked_len, space());
+//  ASYNC_TCP_DEBUG("_sent[%u]: %4u, unacked=%4u, acked=%4u, space=%4u\n", errorTracker->getConnectionId(), len, _tx_unacked_len, _tx_acked_len, space());
+//  Serial.printf("_sent[??]: len=%u, unacked=%u, acked=%u, space=%u\n", len, _tx_unacked_len, _tx_acked_len, space());
   if(_tx_unacked_len == 0){
     _pcb_busy = false;
     errorTracker->setCloseError(ERR_OK);
     if(_sent_cb) {
+//      Serial.printf("ACKACK_sent[??]: %4u, unacked=%4u, acked=%4u, space=%4u\n", len, _tx_unacked_len, _tx_acked_len, space());
       _sent_cb(_sent_cb_arg, this, _tx_acked_len, (millis() - _pcb_sent_at));
       if(!errorTracker->hasClient())
         return;

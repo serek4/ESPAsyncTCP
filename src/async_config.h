@@ -14,7 +14,7 @@
 #endif
 
 // #define ASYNC_TCP_DEBUG(...) ets_printf(__VA_ARGS__)
-// #define TCP_SSL_DEBUG(...) ets_printf(__VA_ARGS__)
+#define TCP_SSL_DEBUG(...) ets_printf(__VA_ARGS__)
 // #define ASYNC_TCP_ASSERT( a ) do{ if(!(a)){ets_printf("ASSERT: %s %u \n", __FILE__, __LINE__);}}while(0)
 
 // Starting with Arduino Core 2.4.0 and up the define of DEBUG_ESP_PORT
@@ -22,7 +22,7 @@
 // #define DEBUG_ESP_PORT Serial
 
 // #define DEBUG_ESP_ASYNC_TCP 1
-// #define DEBUG_ESP_TCP_SSL 1
+#define DEBUG_ESP_TCP_SSL 0
 #include <DebugPrintMacros.h>
 
 #ifndef ASYNC_TCP_ASSERT
